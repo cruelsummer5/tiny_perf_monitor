@@ -186,6 +186,8 @@ public:
 		m_timer->Start(LOW_GRADE);
 
 		monitor.start();
+
+		SetTitle("tiny perf monitor");
 	}
 
 private:
@@ -214,7 +216,6 @@ private:
 		
 
 		++count;
-		SetTitle(wxString::Format("Curve Chart - Time: %d", count));
 	}
 
 	void OnFreqSelected(wxCommandEvent& event)
