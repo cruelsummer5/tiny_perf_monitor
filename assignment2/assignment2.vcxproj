@@ -118,7 +118,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="PerfMonitor.cpp" />
-    <ClCompile Include="perf_dlg.cpp" />
+    <ClCompile Include="perfDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PerfMonitor.h" />

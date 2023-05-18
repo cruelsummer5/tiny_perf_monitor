@@ -18,7 +18,7 @@
     <ClCompile Include="PerfMonitor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="perf_dlg.cpp">
+    <ClCompile Include="perfDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
