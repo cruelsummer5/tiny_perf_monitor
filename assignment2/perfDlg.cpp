@@ -17,22 +17,25 @@ static const char* chartInfos[6][7] = {{ "%使用率", "60S", "100%", "0"},
 							{ "%使用率", "60S", "100%", "0"},
 							{ "吞吐量", "60S", "100kbps", "0"}};
 
-static wxString initTitle = "曲线图";
+static wxString initTitle = "";
 
 static wxColour chartColors[6] = {wxColour(176, 215, 147) , wxColour(17, 125, 187),
 									wxColour(200, 145, 96), wxColour(176, 215, 147),
-									wxColour(149, 40, 180),wxColour(200, 145, 96) };
+									wxColour(149, 40, 180),wxColour(200, 145, 96)};
 
 
-
-class MyChart : public wxPanel {
+// ----------------------------------------------------------------------------
+// curve chart that display 60 point with a value between 0 and 100 
+// and the early inserted points will be on the left side to the late ones
+// ----------------------------------------------------------------------------
+class CurveChart : public wxPanel {
 public:
-	MyChart(wxWindow* parent, const wxColour& colour) : wxPanel(parent),  _colour(colour){}
+	CurveChart(wxWindow* parent, const wxColour& colour) : wxPanel(parent),  _colour(colour){}
 
-	void AppendData(int i)
+	void appendPoint(int i)
 	{
-		m_data.push_back(i);
-		if (m_data.size() > X_STEP) m_data.pop_front();
+		_points.push_back(i);
+		if (_points.size() > X_STEP) _points.pop_front();
 		Refresh();
 	}
 
@@ -49,16 +52,16 @@ private:
 		GetSize(&width, &height);
 		gc->DrawRectangle(0, 0, width, height);
 
-		if (m_data.size() <= 0) return;
+		if (_points.size() <= 0) return;
 		double xStep = width * 1.0 / X_STEP;
 		double yStep = height * 1.0 / 100;
 		int lastX = 0, lastY = 0;
 
 		gc->SetPen(wxPen(_colour, 1));
-		for (size_t i = 0; i < m_data.size(); ++i)
+		for (size_t i = 0; i < _points.size(); ++i)
 		{
 			int x = width - i * xStep;
-			int y = height - m_data[m_data.size() - 1 - i] * yStep;
+			int y = height - _points[_points.size() - 1 - i] * yStep;
 
 			if (i > 0)
 				gc->StrokeLine(lastX, lastY, x, y);
@@ -75,20 +78,23 @@ private:
 		Refresh();
 	}
 
-	std::deque<int> m_data;
+	std::deque<int> _points;
 	wxColour _colour;
 
 	wxDECLARE_EVENT_TABLE();
 };
 
-wxBEGIN_EVENT_TABLE(MyChart, wxPanel)
-EVT_PAINT(MyChart::OnPaint)
-EVT_SIZE(MyChart::OnSize)
+wxBEGIN_EVENT_TABLE(CurveChart, wxPanel)
+EVT_PAINT(CurveChart::OnPaint)
+EVT_SIZE(CurveChart::OnSize)
 wxEND_EVENT_TABLE()
 
-class MyPanel : public wxPanel {
+// ----------------------------------------------------------------------------
+// ChartWithTitle is a CurveChart with a title above 
+// ----------------------------------------------------------------------------
+class ChartWithTitle : public wxPanel {
 public:
-	MyPanel(wxWindow* parent, const wxColour& colour, const wxString& chartLTStr, const wxString& chartLBStr,
+	ChartWithTitle(wxWindow* parent, const wxColour& colour, const wxString& chartLTStr, const wxString& chartLBStr,
 		const wxString& chartRTStr, const wxString& chartRBStr) : wxPanel(parent) {
 
 		wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
@@ -113,7 +119,7 @@ public:
 		mainSizer->Add(topGridSizer, 0, wxEXPAND);
 
 		// 创建wxPanel，并加入BoxSizer
-		chart = new MyChart(this, colour);
+		chart = new CurveChart(this, colour);
 		mainSizer->Add(chart, 1, wxEXPAND | wxLEFT | wxRIGHT, 5);
 
 		// 创建wxGridSizer
@@ -127,16 +133,17 @@ public:
 		btmGridSizer->Add(chartRBText, 0, wxALIGN_RIGHT | wxTOP | wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
 		mainSizer->Add(btmGridSizer, 0, wxEXPAND, 2);
 
+		
 		// 设置BoxSizer为主窗口的sizer
 		SetSizer(mainSizer);
-
+		mainSizer->Fit(this);
 		Layout();
 	}
 
-	void appendData(int i)
+	void appendPoint(int i)
 	{
 		wxString valStr = wxString::Format("%d", i);
-		chart->AppendData(i);
+		chart->appendPoint(i);
 	}
 
 	void changeTitle(const wxString& title)
@@ -145,16 +152,16 @@ public:
 		Layout();
 	}
 private:
-	MyChart* chart;
+	CurveChart* chart;
 	wxStaticText* chartTitleText;
 };
 
 
 class MyFrame : public wxFrame {
 public:
-	MyFrame() : wxFrame(nullptr, wxID_ANY, "My Frame", wxDefaultPosition, wxSize(780, 500)), monitor() {
+	MyFrame() : wxFrame(nullptr, wxID_ANY, "My Frame", wxDefaultPosition, wxSize(780, 500)), _monitor() {
 
-		wxASSERT(monitor.statusValid() == true);
+		wxASSERT(_monitor.statusValid() == true);
 
 		wxMenuBar *menuBar = new wxMenuBar();
 
@@ -172,7 +179,8 @@ public:
 
 		// 创建和添加监控面板
 		for (int i = 0; i < std::extent<decltype(chartColors)>().value; i++) { 
-			MyPanel* panel = new MyPanel(this, chartColors[i], chartInfos[i][0], chartInfos[i][1], chartInfos[i][2], chartInfos[i][3]); // 自定义面板类
+			ChartWithTitle* panel = new ChartWithTitle(this, chartColors[i], chartInfos[i][0], chartInfos[i][1], chartInfos[i][2], chartInfos[i][3]); // 自定义面板类
+			panel->SetMinSize(wxSize(250, 240));
 			sizer->Add(panel, 1, wxEXPAND | wxALL, 5);
 			panels.push_back(panel);
 		}
@@ -181,13 +189,18 @@ public:
 		SetSizer(sizer);
 		Layout();
 
-		m_timer = new wxTimer(this);
+		_timer = new wxTimer(this);
 		Connect(wxEVT_TIMER, wxTimerEventHandler(MyFrame::OnTimer), NULL, this);
-		m_timer->Start(LOW_GRADE);
+		_timer->Start(LOW_GRADE);
 
-		monitor.start();
+		_monitor.start();
 
 		SetTitle("tiny perf monitor");
+	}
+
+	~MyFrame()
+	{
+		delete _timer;
 	}
 
 private:
@@ -196,21 +209,21 @@ private:
 	{
 		static int count = 0;
 
-		monitor.tick();
-		RealTimeData rtd = monitor.getDta();
+		_monitor.tick();
+		RealTimeData rtd = _monitor.getDta();
 
 		std::vector<int> dtaVec = {rtd.curProcessCpuUsage, rtd.iCPUUsage, rtd.ulbps / 1000, 
 								rtd.curProcessMemUsage,rtd.MemUsage, rtd.dlbps / 1000};
 		std::vector<wxString> titleVec = { wxString::Format("当前进程CPU使用率 %d%%", rtd.curProcessCpuUsage), 
-			wxString::Format("CPU %d%%", rtd.iCPUUsage), 
+			wxString::Format("系统CPU使用率 %d%%", rtd.iCPUUsage), 
 			wxString::Format("网络上传速率 %dkbps", rtd.ulbps / 1000), 
 			wxString::Format("当前进程内存使用率 %d%%(%d MB)", rtd.curProcessMemUsage, rtd.curProcessMem / 1000000),
-			wxString::Format("Memory %d%%", rtd.MemUsage),
+			wxString::Format("系统内存使用率 %d%%", rtd.MemUsage),
 			wxString::Format("网络下载速率 %dkbps", rtd.dlbps / 1000), };
 		
 		for (int i = 0; i < panels.size(); i++)
 		{
-			panels[i]->appendData(dtaVec[i]);
+			panels[i]->appendPoint(dtaVec[i]);
 			panels[i]->changeTitle(titleVec[i]);
 		}
 		
@@ -224,19 +237,19 @@ private:
 		switch (event.GetId())
 		{
 		case 101:
-			m_timer->Start(LOW_GRADE);
+			_timer->Start(LOW_GRADE);
 			break;
 		case 102:
-			m_timer->Start(MEDIUM_GRADE);
+			_timer->Start(MEDIUM_GRADE);
 			break;
 		case 103:
-			m_timer->Start(HIGH_GRADE);
+			_timer->Start(HIGH_GRADE);
 			break;
 		}
 	}
-	wxTimer* m_timer;
-	std::vector<MyPanel*> panels;
-	PerfMonitor monitor;
+	wxTimer* _timer;
+	std::vector<ChartWithTitle*> panels;
+	PerfMonitor _monitor;
 };
 
 class MyApp : public wxApp
@@ -244,6 +257,7 @@ class MyApp : public wxApp
 public:
 	virtual bool OnInit()
 	{
+		
 		MyFrame* frame = new MyFrame();
 		frame->Show();
 		return true;

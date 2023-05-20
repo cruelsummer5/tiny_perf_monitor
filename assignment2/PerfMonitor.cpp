@@ -144,11 +144,11 @@ void PerfMonitor::tick()
 
 	//获取上传速率
 	PdhGetFormattedCounterValue(sent, PDH_FMT_DOUBLE, NULL, &counterValue);
-	rtd.ulbps = counterValue.doubleValue / 8;
+	rtd.ulbps = counterValue.doubleValue;
 
 	//获取下载速率
 	PdhGetFormattedCounterValue(rcv, PDH_FMT_DOUBLE, NULL, &counterValue);
-	rtd.dlbps = counterValue.doubleValue / 8;
+	rtd.dlbps = counterValue.doubleValue;
 
 	//获取当前进程的内存使用率和使用字节数
 	PdhGetFormattedCounterValue(curProcessMem, PDH_FMT_LONG, NULL, &counterValue);

@@ -1,3 +1,27 @@
+//
+// PefMonitor.h
+//
+// $Id$
+//
+
+//
+// <this is header file for PerfMonitor which can only be used on Windows. Can
+// be omitted in source (.cpp) files.>
+//usage below:
+//PerfMonitor monitor;
+//if (monitor.statusValid()) //to check if everything is Fine
+//{
+//monitor.start();
+//sleep(1000);//must sleep over or equal to 1s
+//monitor.tick();
+//RealTimeData rtd = monitor.getDta();//RealTimeData contains data such system CPU/Memory Usage or Network Speed 
+//}
+// Copyright (c) 2006, Applied Informatics Software Engineering GmbH.
+// All rights reserved.
+//
+// <License Notice>
+//
+
 #pragma once
 
 #include <pdh.h>
